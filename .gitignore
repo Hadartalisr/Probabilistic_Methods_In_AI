@@ -267,7 +267,6 @@ fabric.properties
 *.nlo
 *.nls
 *.out
-*.pdf
 *.pyg
 *.run.xml
 *.snm
@@ -283,3 +282,5 @@ fabric.properties
 .bak 
 .mtc
 build/
+*.pygtex
+*.pygstyle

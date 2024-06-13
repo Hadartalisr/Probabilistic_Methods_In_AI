@@ -124,13 +124,17 @@ def Q4_identify_corrupt_data(hmm):
     # get data
     validation_data = load_data('validation_data')
     test_data = load_data('test_data')
-    '''
-    TODO. Calculate marginal_log_likelihood on validation data, define prediction rule, 
-            and calculate marginal_log_likelihood of test samples classified as real and as corrupted.
-    '''
-    validation_marginal_log_likelihood = None
-    real_marginal_log_likelihood = None
-    corrupt_marginal_log_likelihood = None
+    validation_marginal_log_likelihood = hmm.log_likelihood(validation_data)
+    test_marginal_log_likelihood = hmm.log_likelihood(test_data)
+
+    validation_log_likelihood_expectation = np.average(validation_marginal_log_likelihood)
+    validation_log_likelihood_std = np.std(validation_marginal_log_likelihood)
+
+    is_corrupted = [log_p_O < validation_log_likelihood_expectation - 3 * validation_log_likelihood_std for log_p_O in
+                    test_marginal_log_likelihood]
+
+    real_marginal_log_likelihood = test_marginal_log_likelihood[~np.array(is_corrupted)]
+    corrupt_marginal_log_likelihood = test_marginal_log_likelihood[is_corrupted]
 
     # plot histograms
     plt.title('Histogram of marginal log-likelihood')
