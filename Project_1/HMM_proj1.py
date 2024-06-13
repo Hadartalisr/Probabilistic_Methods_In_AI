@@ -117,8 +117,6 @@ class HMM:
 
     def log_likelihood(self, obs):
         """
-        TODO calculate the log likelihood of the observations for each sample p(o1:T[i]).
-             Use the supplied forward-algorithm.
         :param obs - N observations. shape = (N,T)
         :return log-likelihood. shape = (N)
 
@@ -132,7 +130,6 @@ class HMM:
 
     def log_prior_Xt(self):
         """
-        TODO calculate the point-wise prior p(X_t=x)
         :return point-wise prior. shape = (T, |val(X)|)
         P'[t, k] = p(X_t = k) = sum_{l in Val(x)} p(X_t = k | X_{t-1}=l) * p(X_{t-1} = l)
                              = sum_{l in Val(x)} P(X_t = k | X_{t-1}=l) * P'[t-1, l]
@@ -154,7 +151,6 @@ class HMM:
 
     def log_naive_posterior_Xt(self, obs):
         """
-        TODO calculate the point-wise posterior p(X_t=x | ot=obs[i][t])
         :param obs - N observations. shape = (N,T)
         :return point-wise posterior. shape = (N, T, |val(X)|)
 
@@ -185,8 +181,6 @@ class HMM:
     ########################################
     def naive_predict_by_naive_posterior(self, obs):
         """
-        TODO predict a sequence of hidden states for each sample using the point-wise posterior:
-            X_hat[i][t] = argmax_x[ p(X_t=x | ot=obs[i][t]) ]
         :param obs - N observations. shape = (N,T)
         :return X_hat - N hidden sequences. shape = (N,T)
         """

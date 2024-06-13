@@ -33,12 +33,15 @@ pdfproducer={PDFLaTeX},%
 
 
 \begin{document}
-\homework{Project 1 - Representation}{Due: 06/06/24}{Prof. Gal Elidan}{}{Hadar Tal}{}
+\homework{Project 1 - Representation}{Due: 06/06/24}{Prof. Gal Elidan}{}{Ela Fallik}{Hadar Tal}{}
 
 
 
 \section{Warmup}
 
+\textcolor{blue}{
+    The solution is above. 
+}
 
 \section{Sampling}
 \begin{enumerate}
@@ -48,12 +51,14 @@ pdfproducer={PDFLaTeX},%
     \textcolor{blue}{
         Implemented the \texttt{sample} method in the \texttt{HMM} class.
     }
+    \\
 
     \item Implement in the HMM class the method \texttt{log\_joint}, that calculates the joint probability for each sample \( p(X_{1:T}, O_{1:T}) \). 
     \\
     \\ \textcolor{blue}{
         Implemented the \texttt{log\_joint} method in the \texttt{HMM} class.
     }
+    \\
 
     \item Sample \( N = 100 \) samples \( \xi^{[i]} = (X_{1:T}, O_{1:T}) \) from the HMM1 model with \( T = 1000 \). Calculate the joint probability of each sample \( p(\xi^{[i]}) \).
     \\
@@ -75,6 +80,7 @@ pdfproducer={PDFLaTeX},%
     \textcolor{blue}{
         The log joint probabilities histogram is shown below.
     }    
+    \\
 
     \item Plot the histogram of the log joint probabilities [*]. Why are the joint probabilities so small, even though the samples were sampled from the “correct” model?
     \\
@@ -167,7 +173,8 @@ pdfproducer={PDFLaTeX},%
         In summary, HMM1’s higher entropy leads to more random and rare sequences with lower log joint probabilities, while HMM2’s lower entropy leads to 
         more stable and common sequences with higher log joint probabilities.
     }
-    
+    \\
+
     \item Load real observations from the \texttt{small\_binary\_data.csv} file [*]. Plot these observations same as the sampled data (3) [*]. 
     What is the pattern in the real data? Explain the differences. Does this data fit the HMM model assumptions?
     \begin{figure}[H]
@@ -201,7 +208,6 @@ pdfproducer={PDFLaTeX},%
 \end{enumerate}
 
 \section{Calculating Prior, Likelihood, and Posterior}
-As we discussed above, calculating the priors, likelihoods, and posteriors is difficult. However, there are efficient ways to calculate these probabilities using Dynamic-Programming. These are examples of inference problems, which we’ll explore more in the next chapter of the course. For now, we’ll focus on calculating the prior \( p(X_t) \) for some \( t \):
 
 \begin{enumerate}
     \item We define a subproblem for each \( t = 1, \ldots, T \) and \( k \in \text{Val}(X) \):
@@ -209,39 +215,122 @@ As we discussed above, calculating the priors, likelihoods, and posteriors is di
     P[t, k] = p(X_t = k)
     \]
     How can we calculate \( P[1, k] \) directly from the network CPDs?
-    
+    \\
+    \\ \textcolor{blue}{
+        $P[1, k] = Pr(X_1 = k)$ and is given directly by the initial state distribution (prior distribution) of the HMM.
+    }
+    \\
+
     \item Using the multiplicative rule, we get a recursive formula for \( P \):
     \[
     P[t, k] = p(X_t = k) = \sum_{l \in \text{Val}(X)} p(X_t = k | X_{t-1} = l) \cdot p(X_{t-1} = l) = \sum_{l} p(X_t = k | X_{t-1} = l) \cdot P[t-1, l]
     \]
     Using this formula, we can iteratively fill a table \( P_{|\text{Val}(X)| \times T} \) by first filling the first column with the start conditions \( P[1, k] \), and continuing by columns: At each stage \( t \), we use the \( t \)-th column to compute the \( (t+1) \)-th. Implement in the HMM class the method \texttt{log\_p\_Xt}, that calculates the table \( \log P[t, k] = \log p(X_t = k) \).
+    \\
+    \\ \textcolor{blue}{
+        Implemented the \texttt{log\_prior\_Xt} method in the \texttt{HMM} class.
+    }
+    \begin{minted}[fontsize=\footnotesize]{python}
+        def log_prior_Xt(self):
+            """
+            :return point-wise prior. shape = (T, |val(X)|)
+
+            P'[t, k] = p(X_t = k) = sum_{l in Val(x)} p(X_t = k | X_{t-1}=l) * p(X_{t-1} = l)
+                    = sum_{l in Val(x)} P(X_t = k | X_{t-1}=l) * P'[t-1, l]
+                    = P(X_t = k | X_{t-1}=l_1) * P'[t-1, l_1] + ...  P(X_t = k | X_{t-1}=l_n) * P'[t-1, l_n]
+
+            P[t, k] = logp(X_t = k) = logp( exp(   logp(X_t = k | X_{t-1}=l_1) + P[t, l_1])   ) + ... 
+                                            + exp(   logp(X_t = k | X_{t-1}=l_n) + P[t, l_n])   ) )
+            """
+    \end{minted}
     
-    \item Implement in the HMM class the method \texttt{log\_p\_Xt\_given\_Ot}, that calculates \( \log p(X_t | o_t) \). Hint: How can you use \( \log p(X_t = k) \) to calculate the point-wise log posterior \( \log p(X_t | o_t) \)?
+    \item Implement in the HMM class the method \texttt{log\_p\_Xt\_given\_Ot}, that calculates \( \log p(X_t | o_t) \). 
+    \\ 
+    \\ \textcolor{blue}{
+        Implemented the \texttt{log\_naive\_posterior\_Xt} method in the \texttt{HMM} class.
+    }
+    \begin{minted}[fontsize=\footnotesize]{python}
+        def log_naive_posterior_Xt(self, obs):
+            """
+            :param obs - N observations. shape = (N,T)
+            :return point-wise posterior. shape = (N, T, |val(X)|)
+
+            log( p(X_t = x_t | O_t = o_t) ) 
+                    = log(     p(X_t = x_t) * p(O_t = o_t | X_t = x_t)    /    
+                            sum_{x in Val(X)}  p(X_t = x) * p(O_t = o_t | X_t = x)  )
+                    = log_p(X_t = x) + log_p(O = o_t| X = x) 
+                            - log(sum_{x in Val(X)}  p(X_t = x) * p(O = o_t | X = x)  )
+                    = log_p(X_t = x) + log_p(O = o_t| X = x) 
+                            - log(sum_{x in Val(X)}  exp( log_p(X_t = x) + log_p(O = o_t | X = x)  )
+
+            """
+    \end{minted}
     
-    \item Next, we supply you with a function \texttt{\_log\_forward} that calculates the log of the table \( \log F[t, k] = \log p(X_t = k, o_{1:t}) \) in a similar way to the log prior (we’ll talk about this algorithm later in the course) [*]. Implement in the HMM class a method \texttt{log\_likelihood}, that calculates the log-likelihood of the observations \( \log p(o_{1:m}) \).
+    \item Next, we supply you with a function \texttt{\_log\_forward} that calculates the log of the table \( \log F[t, k] = \log p(X_t = k, o_{1:t}) \) in a similar way to the log prior
+     (we’ll talk about this algorithm later in the course) [*]. Implement in the HMM class a method \texttt{log\_likelihood}, that calculates the log-likelihood of the observations \( \log p(o_{1:m}) \).
+    \\
+    \\ \textcolor{blue}{
+        Implemented the \texttt{log\_likelihood} method in the \texttt{HMM} class.
+    }
+
+    \begin{minted}[fontsize=\footnotesize]{python}
+        def log_likelihood(self, obs):
+            """
+            :param obs - N observations. shape = (N,T)
+            :return log-likelihood. shape = (N)
+
+            log(p(o_[1:T]) = log (    sum_{k in Val(X)} p(o_1, ... , o_T, k) )     )
+                            = log( sum_{k in Val(X)} exp ( log_p(o_1, ... , o_T, k) ) )
+                            = log( sum_{k in Val(X)} exp ( F[T,k] )    )
+            """
+    \end{minted}
+    
+
 \end{enumerate}
 
 \section{Identifying Corrupt Data}
-You are given a validation and a test dataset, each including a set of observations. The validation dataset was sampled directly from the HMM2 model. In the test dataset, the data is noisy, and some modification statuses were flipped (corrupted). We want to differentiate between samples with noisy observations and the rest. Intuitively, our trained Bayesian network should assign lower probability to corrupted observations and higher probability to the real ones. We can use this intuition to filter out corrupted data:
 
-\begin{enumerate}
-    \item Calculate the log-likelihood of each observation in the validation dataset (which includes only real observations) under the HMM2 model:
-    \[
-    \log p(o_{1:m})
-    \]
-    
-    \item Compute the average \( \mu \) and the standard deviation \( \sigma \) of the log-likelihood on the validation dataset (average and std of \( \log p(o_{1:m}) \) over the validation set samples).
-    
-    \item Define a prediction rule: A sample with observations that have log-likelihood \( \log p(o_{1:m}) \) below three standard deviations of the average marginal log-likelihood, are classified as corrupted. That is,
-    \[
-    \text{if } \log p(o_{1:m}) < \mu - 3 \cdot \sigma \Rightarrow o_{1:m} \text{ is corrupted}
-    \]
-    This rule states that if a sample’s observations are very unlikely to originate from the same distribution as the validation data, then it is corrupted. In our case, “very unlikely” is translated to 3 standard deviations away from the mean. This practice follows a rule called The Empirical Rule.
-    
-    \item For each sample in the test dataset, calculate its log-likelihood and classify it as corrupted or real using the prediction rule.
-    
-    \item Plot the histogram of the log likelihood \( \log p(o_{1:m}) \) for the validation data [*]. On top of this histogram, plot two more histograms: One of the marginal log probability for the observations classified as “real”, and another for the observations classified as “corrupted” [*]. Explain the results.
-\end{enumerate}
+\textcolor{blue}{
+    Implemented the function \texttt{Q4\_identify\_corrupt\_data} with comments that divide the function into the required steps.
+}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{../plots/Q4_hist.png}
+\end{figure}
+
+\textcolor{blue}{
+    The histogram of marginal log-likelihoods shows distinct distributions for validation data, real test data, and corrupted test data. Here’s an explanation of the results: \\
+    \textbf{Observations} \\
+    \begin{enumerate}
+        \item \textbf{Validation Data (Blue):}
+        \begin{itemize}
+            \item Peak around -50 to -100.
+            \item Roughly normal distribution centered around these values.
+        \end{itemize}
+        \item \textbf{Real Test Data (Orange):}
+        \begin{itemize}
+            \item Overlaps with validation data but slightly shifted to lower values.
+            \item Indicates similarity to validation data with some deviations due to noise.
+        \end{itemize}
+        \item \textbf{Corrupted Test Data (Green):}
+        \begin{itemize}
+            \item Distinct peak around -150 to -200.
+            \item Significantly lower values indicate substantial deviations and anomalies.
+        \end{itemize}
+    \end{enumerate} 
+    \textbf{Key Points} 
+    \begin{itemize}
+        \item \textbf{Overlap Between Validation and Real Test Data:} Indicates the model captures real data patterns well, with slight variations.
+        \item \textbf{Separation of Corrupted Data:} Clear separation with lower log-likelihoods shows the model effectively identifies anomalies.
+    \end{itemize} 
+    \textbf{Conclusion} \\
+    The histogram demonstrates the model's ability to distinguish between real and corrupted test data based on marginal log-likelihoods.
+}
+
+
+
 
 \section{Predict Active Promoters}
 Say we want to predict the most likely segmentation to active promoters given a sequence of modifications. We’ll try to use the following rule:
@@ -250,14 +339,59 @@ Say we want to predict the most likely segmentation to active promoters given a 
 \]
 
 
-% \begin{enumerate}
-%     \item Implement this rule in the \texttt{naive_predict} method of the HMM class (use the point-wise posterior from Section 3).
-%     \item Sample  N = 100  samples  \{\xi^{[i]}\}{i=1}^N  from HMM3 and predict their active promoter sequence  \{\hat{X}^{[i]}\}{i=1}^N .
-%     \item Calculate the single-location accuracy of the prediction:
+\begin{enumerate}
+    \item Implement this rule in the \texttt{naive\_predict} method of the HMM class (use the point-wise posterior from Section 3). \\
+    \\
+    \textcolor{blue}{
+        Implemented the \texttt{naive\_predict\_by\_naive\_posterior} method in the \texttt{HMM} class.
+    }
 
-%     \text{single-location-accuracy} = \frac{1}{N \cdot T} \sum_{i=1}^N \sum_{t=1}^T \mathbf{1}\{ \xi^{[i]}_t = \hat{X}^{[i]}_t \}
-%     What is the accuracy of the naive-predictor? Is this a good prediction rule? If not, suggest a better rule (no need to implement).
-% \end{enumerate}
+    \item Sample  N = 100  samples  $\{\xi^{[i]}\}{i=1}^N$  from HMM3 and predict their active promoter sequence  $\{\hat{X}^{[i]}\}_{i=1}^N $.
+    \\
+    \textcolor{blue}{
+        Loaded the HMM3 model and sampled  N = 100  samples from the model.
+    }
+
+    \begin{minted}[fontsize=\footnotesize]{python}
+        Load HMM3. CPDs:
+        prior
+        ['prior(0)=1.000' 'prior(1)=0.000']
+        transition_mat
+        [['tau(0->0)=0.999' 'tau(0->1)=0.001']
+        ['tau(1->0)=0.000' 'tau(1->1)=1.000']]
+        emission_mat
+        [['e(0->0)=0.990' 'e(0->1)=0.010']
+        ['e(1->0)=0.010' 'e(1->1)=0.990']]
+    \end{minted}
+
+    \item Calculate the single-location accuracy of the prediction:
+        \[
+            \text{single-location-accuracy} = \frac{1}{N \cdot T} \sum_{i=1}^N \sum_{t=1}^T \mathbf{1}\{ \xi[i]^{k}_t = \hat{X}[i]^{k}_t \}
+        \]
+        What is the accuracy of the naive-predictor? Is this a good prediction rule? If not, suggest a better rule (no need to implement).
+    \\
+
+\textcolor{blue}{  
+    \textbf{Accuracy of the Naive Predictor} \\
+    The naive prediction accuracy is 0.98989. \\
+    \textbf{Confusion Matrix} \\
+    \[
+    \begin{bmatrix}
+        62048 & 641 \\
+        370 & 36941 \\
+    \end{bmatrix}
+    \]
+    \textbf{Invalid Transitions} \\
+    There are 994 invalid transitions from state 1 to state 0. \\
+    \textbf{Evaluation of the Prediction Rule} \\
+    \underbar{Is this a good prediction rule?} No, the naive predictor is not ideal as it ignores temporal dependencies and only considers the point-wise posterior \( p(X_t | O_t) \). \\
+    \underbar{Reasons for Its Performance:} \\
+    The high accuracy is due to the high diagonal values in the transition and emission matrices, indicating a tendency to remain in the same state and strong state-indicative observations. \\
+    \textbf{Suggested Improvement} \\
+    A better predictor would use the Viterbi algorithm to account for temporal dependencies, optimizing the state sequence globally rather than point-wise, thus improving overall prediction accuracy.
+}
+
+\end{enumerate}
 
 
 
