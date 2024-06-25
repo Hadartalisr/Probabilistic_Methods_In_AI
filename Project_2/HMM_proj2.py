@@ -273,8 +273,6 @@ class HMM:
     ########################################
     def naive_predict_by_naive_posterior(self, obs):
         """
-        TODO(Proj1) predict a sequence of hidden states for each sample using the point-wise posterior:
-            X_hat[i][t] = argmax_x[ p(X_t=x | ot=obs[i][t]) ]
         :param obs - N observations. shape = (N,T)
         :return X_hat - N hidden sequences. shape = (N,T)
         """
@@ -283,8 +281,6 @@ class HMM:
 
     def naive_predict_by_posterior(self, obs, log_post_Xt=None):
         """
-        TODO(Proj2) predict a sequence of hidden states for each sample using the posterior:
-            X_hat[i][t] = argmax_x[ p(X_t=x | o=obs[i]) ]
         :param obs - N observations. shape = (N,T)
         :param log_post_Xt - optional. Use it to predict the hidden states. If not given, calculate using
                                         the log_posterior_Xt method. shape = (N, T, |val(X)|)

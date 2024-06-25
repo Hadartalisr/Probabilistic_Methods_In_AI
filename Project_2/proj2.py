@@ -32,9 +32,6 @@ def Q1_prior_vs_posterior(hmm, obs):
     """
     1. Calculate the posterior p(Xt | obs[i]) for each obs i
     2. Plot the prior vs the mean posterior of Xt=1 (mean over the observations i=1,...,N)
-
-    TODO: You need to implement the log_posterior_Xt method in the HMM class
-
     :param obs - N observations. shape = (N,T)
     """
     # Calculate the prior p(Xt = 1)
@@ -54,8 +51,6 @@ def Q1_predictions(hmm, hidden, obs):
     1. Predict the hidden assignment for each observation using the rule:
                     X_hat[i][t] = argmax_x[ p(X_t=x | o=obs[i]) ]
     2. Calculate the accuracy of the predication
-
-    TODO: You need to implement the naive_predict_by_posterior method in the HMM class
 
     :param hidden - N hidden sequences. shape = (N,T)
     :param obs - N observations. shape = (N,T)
@@ -89,7 +84,6 @@ def Q23(obs, hmm, exact_log_post_Xt, M_arr, n_repeats, algo_name):
     2. Repeated n_repeats times
     3. Plot the posterior vs M
 
-    TODO: You need to implement the gibbs_sampling_posterior and likelihood_weighting_posterior methods in the HMM class
     """
     est_log_post_Xt = calc_posterior_for_M_arr(obs, hmm, M_arr, n_repeats, algo_name)
     plot_posterior_vs_M(np.exp(est_log_post_Xt), np.exp(exact_log_post_Xt), algo_name, M_arr, t=5, x=1)
@@ -105,7 +99,6 @@ def Q4_predictions(hmm, est_log_post_Xt_per_algo, exact_log_post_Xt, hidden, M_a
             the exact posteriors
     3. Plot the accuracy vs M
 
-    TODO: You need to implement the naive_predict_by_posterior methods in the HMM class
     """
     fig, ax = plt.subplots(1, 1)
 
