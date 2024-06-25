@@ -131,7 +131,6 @@ class HMM:
             p.append(self.log_joint(np.broadcast_to(x, obs.shape), obs))
         return logsumexp(p, axis=0)
 
-
     def log_likelihood(self, obs):
         """
         :param obs - N observations. shape = (N,T)
@@ -195,12 +194,20 @@ class HMM:
 
     def log_posterior_Xt(self, obs):
         """
-        TODO(Proj2) Calculate the posterior p(X_t=x | o=obs[i])
         :param obs - N observations. shape = (N,T)
         :return log posterior for Xt. shape = (N, T, |val(X)|)
         """
-        log_post_Xt = None
+        log_likelihood = self.log_likelihood(obs)  # N
+        log_forward = _log_forward(obs, self.log_prior, self.log_transition_mat, self.log_emission_mat, self.val_X,
+                                   self.T)  # N x T x |Val(X)|
+        log_backward = _log_backward(obs, self.log_transition_mat, self.log_emission_mat, self.val_X,
+                                     self.T)  # N x T x |Val(X)|
+
+        # log_post_Xt(i, t, k) = log_forward(i, t, k) + log_backward(i,t,k) - log_likelihood(i)
+        log_post_Xt = log_forward + log_backward - log_likelihood[:, np.newaxis, np.newaxis]
+
         assert_dist_sums_to_1(log_post_Xt, axis=2)  # sum_k[ p(Xt = k | o) ] == 1
+
         return log_post_Xt
 
     ########################################
@@ -208,34 +215,57 @@ class HMM:
     ########################################
     def gibbs_sampling_posterior(self, obs, M_max=100, M_start=50):
         """
-        TODO(Proj2) For each observation obs[i]:
+        For each observation obs[i]:
                 1. Sample a starting point X1
                 2. Sample Xt given the others and given obs[i] for M iterations
                 3. Use the last M-M_start samples to estimate the probability of each Xt given obs p(Xt | o=obs[i])
         Note: you can sample for all N observations simultaneously
 
         :param obs - N observations. shape = (N,T)
-        :param M_max: number of iteration to use for Gibbs (int)
+        :param M_max: number of iterations to use for Gibbs (int)
         :return: estimated log posterior for Xt. shape = (N, T, |val(X)|)
         """
-        log_post_Xt = None
-        assert_dist_sums_to_1(log_post_Xt, axis=2)  # sum_k[ p(Xt = k | o) ] == 1
-        return log_post_Xt
 
-    def likelihood_weighting_posterior(self, obs, M_max=100):
-        """
-        TODO(Proj2) For each observation obs[i]:
-                1. Sample M_max samples from the network
-                2. Calculate their LW weights
-                3. Use LW to estimate the probability of each Xt given obs p(Xt | o=obs[i])
-        Note: you can sample and calculate the weights of all N*M_max samples simultaneously
+        N = len(obs)
+        val_X_len = len(self.val_X)
 
-        :param obs - N observations. shape = (N,T)
-        :param M_max: number of samples to use for LW (int)
-        :return: estimated log posterior for Xt. shape = (N, T, |val(X)|)
-        """
-        log_post_Xt = None
-        assert_dist_sums_to_1(log_post_Xt, axis=2)  # sum_k[ p(Xt = k | o) ] == 1
+        # Initialize samples
+        samples = np.zeros((M_max, N, self.T), dtype=int)
+        samples[0, :, :] = np.random.choice(self.val_X, size=(N, self.T))
+
+        for m in range(1, M_max):
+            samples[m, :, :] = samples[m - 1, :, :]
+
+            for t in range(self.T):
+                # Calculate conditional distribution for current position for all samples
+                log_prob = np.zeros((N, val_X_len))
+
+                log_prob += self.log_emission_mat[:, obs[:, t]].T
+
+                if t > 0:
+                    log_prob += self.log_transition_mat[samples[m, :, t - 1]]
+                if t < self.T - 1:
+                    log_prob += self.log_transition_mat[:, samples[m - 1, :, t + 1]].T
+
+                log_prob -= logsumexp(log_prob, axis=1, keepdims=True)
+
+                for i in range(N):
+                    samples[m, i, t] = np.random.choice(self.val_X, p=np.exp(log_prob[i]))
+
+        # Use samples from M_start to M_max to estimate the posterior
+        post_samples = samples[M_start:M_max]
+        log_post_Xt = np.zeros((N, self.T, val_X_len), dtype=float)
+
+        for i in range(N):
+            for t in range(self.T):
+                for k in range(val_X_len):
+                    log_post_Xt[i, t, k] = np.sum(post_samples[:, i, t] == k)
+
+        log_post_Xt = np.log(log_post_Xt / (M_max - M_start))
+
+        # Ensure the distribution sums to 1
+        assert_dist_sums_to_1(log_post_Xt, axis=2)
+
         return log_post_Xt
 
     ########################################
@@ -248,7 +278,8 @@ class HMM:
         :param obs - N observations. shape = (N,T)
         :return X_hat - N hidden sequences. shape = (N,T)
         """
-        pass
+        X_hat = np.argmax(self.log_naive_posterior_Xt(obs), axis=-1)
+        return X_hat
 
     def naive_predict_by_posterior(self, obs, log_post_Xt=None):
         """
@@ -256,8 +287,11 @@ class HMM:
             X_hat[i][t] = argmax_x[ p(X_t=x | o=obs[i]) ]
         :param obs - N observations. shape = (N,T)
         :param log_post_Xt - optional. Use it to predict the hidden states. If not given, calculate using
-                                        the log_posterior_Xt method
+                                        the log_posterior_Xt method. shape = (N, T, |val(X)|)
         :return X_hat - N hidden sequences. shape = (N,T)
         """
-        pass
+        if log_post_Xt is None:
+            log_post_Xt = self.log_posterior_Xt(obs)
+
+        return np.argmax(log_post_Xt, axis=-1)
 

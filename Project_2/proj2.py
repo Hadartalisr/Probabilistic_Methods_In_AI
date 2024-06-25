@@ -1,4 +1,5 @@
 from HMM_proj2 import *
+from tqdm import tqdm
 
 
 def get_hmm():
@@ -84,7 +85,7 @@ def calc_posterior_for_M_arr(obs, hmm, M_arr, n_repeats, algo_name):
 
 def Q23(obs, hmm, exact_log_post_Xt, M_arr, n_repeats, algo_name):
     """
-    1. Estimates the log posterior of Xt using 'algo_name' (Gibbs \ LW) with M samples for each M in M_arr.
+    1. Estimates the log posterior of Xt using 'algo_name' (Gibbs or LW) with M samples for each M in M_arr.
     2. Repeated n_repeats times
     3. Plot the posterior vs M
 
@@ -157,6 +158,14 @@ if __name__ == '__main__':
     exact_log_post_Xt = Q1_prior_vs_posterior(hmm1, obs)
     Q1_predictions(hmm1, hidden, obs)
 
+    # Q5 from exercise 1
+    def q5_test_pred(hmm, data_obs, data_hidden):
+        X_hat = hmm.naive_predict_by_naive_posterior(data_obs)
+        print(f'Naive prediction accuracy = {accuracy(data_hidden.flatten(), X_hat.flatten())}')
+
+
+    q5_test_pred(hmm1, obs, hidden)
+
     # Q2, Q3
     print('''
         ########################################
@@ -166,7 +175,7 @@ if __name__ == '__main__':
     M_arr = [10, 50, 70, 100, 200, 300, 500]
     n_repeats = 5
     est_log_post_Xt_per_algo = {}
-    for algo_name in ['Gibbs', 'LW']:  # TODO: If you choose to not implement the bonus 'LW', remove it from this list.
+    for algo_name in ['Gibbs']:  # TODO: If you choose to not implement the bonus 'LW', remove it from this list.
         est_log_post_Xt_per_algo[algo_name] = Q23(obs, hmm1, exact_log_post_Xt, M_arr, n_repeats, algo_name)
 
     # Q4
