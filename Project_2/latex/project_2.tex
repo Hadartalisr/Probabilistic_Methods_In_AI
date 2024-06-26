@@ -33,10 +33,144 @@ pdfproducer={PDFLaTeX},%
 
 
 \begin{document}
-\homework{Project 2 - Inference in HMM}{Due: 27/06/24}{Prof. Gal Elidan}{}{Ela Fallik}{Hadar Tal}{}
+\homework{Project 2 - Inference}{Due: 27/06/24}{Prof. Gal Elidan}{}{Ela Fallik}{Hadar Tal}{}
+
+
+\section*{Part I: Theoretical Questions}
+
+\subsection*{1. Extreme Cases of the Mutilated Network}
+
+\subsubsection*{\tblu{1.1 Assuming we see evidence \( e_r = \{M = m_0, F = f_1\} \)}}
+
+\begin{enumerate}
+    \item[(a)] \tblu{What is the graph of the mutilated network \( B_{e_r} \)? Which CPDs have changed?}
+    
+    \item[(b)] \tblu{Show that the proposal distribution is equal to the posterior \( p_B(X \mid e_r) \) in this case.}
+    
+    \item[(c)] \tblu{What are the IS weights?}
+    
+    \item[(d)] \tblu{Is \( q = p_{B_e} \) a good choice for the proposal distribution in this case?}
+\end{enumerate}
+
+\subsubsection*{\tblu{1.2 Assuming we see evidence \( e_l = \{n = n_1, L = l_1\} \)}}
+
+\begin{enumerate}
+    \item[(a)] \tblu{What is the graph of the mutilated network \( B_{e_l} \)? Which CPDs have changed?}
+    
+    \item[(b)] \tblu{Show that the proposal distribution is equal to the prior \( p_B(X) \) in this case.}
+    
+    \item[(c)] \tblu{What are the IS weights?}
+    
+    \item[(d)] \tblu{Is \( q = p_{B_e} \) a good choice for the proposal distribution in this case?}
+\end{enumerate}
+
+\subsubsection*{\tblu{1.3 Conclusion}}
+
+\tblu{Use these two extreme cases to conclude, for a general BN, when \( q = p_{B_e} \) will be a good proposal distribution.}
 
 
 
+
+
+
+\newpage
+\subsection*{2. Data Association}
+
+\begin{enumerate}
+    \item \tblu{Compute the acceptance probability \( A(c, c') \) for each MH step.}
+    
+    \item \tblu{Suppose we have run the MH sampler for a long time and collected \( M \) samples \( \{(C_1^{[m]}, \ldots, C_K^{[m]})\}_{m=T+1}^{T+M} \) 
+    after the chain has mixed. Give an explicit expression for estimating the posterior \( p(C_i \mid v_1, \ldots, v_K) \).}
+    
+    \item \tblu{Your fellow student hears about your MH algorithm and suggests that you can also consider using Gibbs sampling to compute your marginals. Will this work? Explain.}
+\end{enumerate}
+
+
+
+
+
+
+\newpage
+\subsection*{3. Block Gibbs}
+
+
+\begin{enumerate}
+    \item \tblu{What will happen if we try to use Gibbs sampling on \( B \) to estimate \( p(x_1 \mid z_1) \)?}
+    
+    \item \tblu{Now suppose we make \( Z \) a noisy XOR of its parents. Specifically,
+    \[
+    p(z_1 \mid X, Y) =
+    \begin{cases}
+    \epsilon & \text{if } x = 0, y = 0 \\
+    1 - \epsilon & \text{if } x = 0, y = 1 \\
+    1 - \epsilon & \text{if } x = 1, y = 0 \\
+    \epsilon & \text{if } x = 1, y = 1
+    \end{cases}
+    \]
+    What is the expected number of iterations until a state transition (i.e., from one state of the chain - some instantiation \( x, y, z \) - to a different state) 
+    as a function of \( \epsilon \)? What can you conclude about problems that Gibbs sampling might encounter in this scenario?}
+    
+    \item \tblu{Alternatively, we can think of a variant of Gibbs sampling where larger steps are taken. 
+    Specifically, larger sets of variables are sampled simultaneously while the rest are fixed. 
+    Show that sampling two variables given the third overcomes the problem of Gibbs sampling in the deterministic XOR network.}
+    
+    \item \tblu{To use this last sampler, we need to calculate the probability of a pair of variables given the rest. 
+    Write down a (simplified as possible) formula for \( p_{\Phi}(X_i, X_j \mid X \setminus \{X_i, X_j\}) \) for a general Gibbs distribution \( p_{\Phi} \).}
+\end{enumerate}
+
+
+
+
+
+
+\newpage
+\subsection*{4. Collapsed Particles}
+
+
+\begin{enumerate}
+    \item \tblu{Show that
+    \[
+    E_{p(X \mid e)}[f(X)] = \sum_{x_p} p(x_p \mid e) E_{p(X_d \mid x_p, e)}[f(x_p, X_d, e)]
+    \]
+    Use this to explain how to estimate \( E_{p(X \mid e)}[f(X)] \) using the collapsed particles.}
+    
+    \item \tblu{Describe what this approach is equivalent to in the two extreme cases: When \( X_p = \emptyset \) and when \( X_p = X \).}
+    
+    \item \tblu{Describe what will be a good "rule-of-thumb" in choosing \( X_p \) and \( X_d \) for this method.}
+    
+    \item \tblu{Give an example of a Bayesian Network over \( X \), a set of observed variables \( E \) and a query \( p(X \mid e) \) 
+    that is hard to calculate directly, but can be estimated using the described method of collapsed particles using 
+    efficient calculations only. \( X_d \) and \( X_p \) should be \( \neq \emptyset \) in your example.}
+    
+    \item \tblu{In many cases, sampling from \( p(X_p \mid e) \) is still hard. 
+    We therefore want to build a (Normalized) Importance Sampling version of this method. 
+    We do this by sampling \( x_p \) from a proposal distribution \( q(X_p) \) and using the weights
+    \[
+    w(x_p) = \frac{p(x_p, e)}{q(x_p)} = \frac{p(x_p, e_p) \cdot p(x_d \mid x_p, e_p)}{q(x_p)}
+    \]
+    where \( E_p = E \cap X_p \) and \( E_d = E \cap X_d \). Prove the correctness of this method. Specifically, show that \( E_q[w(x_p)] = p(e) \), 
+    and conclude that this procedure gives an estimation of \( E_{p(X \mid e)}[f(X)] \).}
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
 \section*{Part II}
 \textbf{Programming Assignment - Inference in HMM}
 
