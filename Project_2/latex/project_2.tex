@@ -79,10 +79,107 @@ pdfproducer={PDFLaTeX},%
 \begin{enumerate}
     \item \tblu{Compute the acceptance probability \( A(c, c') \) for each MH step.}
     
+    The acceptance probability \( A(c, c') \) for transitioning from state \( c \) to \( c' \) is given by:
+    \[
+    A(c \to c') = \min \left( 1, \frac{\pi(c') T(c' \to c)}{\pi(c) T(c \to c')} \right)
+    \]
+    where:
+    \begin{itemize}
+        \item \( \pi(c) \) is the target distribution at state \( c \).
+        \item \( T(c \to c') \) is the proposal distribution for moving from state \( c \) to state \( c' \).
+    \end{itemize}
+
+    In our case, the target distribution \( \pi(c) \) is the posterior \( p(c \mid v_1, \ldots, v_K) \), which can be expressed using Bayes' theorem as:
+    \[
+    p(c \mid v_1, \ldots, v_K) = \frac{p(v_1, \ldots, v_K \mid c) p(c)}{p(v_1, \ldots, v_K)}
+    \]
+    Since \( p(v_1, \ldots, v_K) \) is a normalizing constant and does not affect the ratio, it can be ignored for the acceptance probability calculation. Thus, we have:
+    \[
+    \frac{p(c' \mid v_1, \ldots, v_K)}{p(c \mid v_1, \ldots, v_K)} = \frac{p(v_1, \ldots, v_K \mid c') p(c')}{p(v_1, \ldots, v_K \mid c) p(c)}
+    \]
+
+    Assuming a uniform prior \( p(c) \) over all permutations:
+    \[
+    p(c) = p(c') \implies \frac{p(c')}{p(c)} = 1
+    \]
+
+    Therefore, the acceptance probability simplifies to:
+    \[
+    A(c \to c') = \min \left( 1, \frac{p(v_1, \ldots, v_K \mid c')}{p(v_1, \ldots, v_K \mid c)} \cdot \frac{T(c' \to c)}{T(c \to c')} \right)
+     \stackrel{\text{uniform transition}}{=} \min \left( 1, \frac{p(v_1, \ldots, v_K \mid c')}{p(v_1, \ldots, v_K \mid c)} \right)
+    \]
+
+    Given the independence of observations given the correspondences:
+    \[
+    p(v_1, \ldots, v_K \mid c) = \prod_{i=1}^{K} p(V_i \mid C_i = c_i)
+    \]
+
+    Thus, the acceptance probability can be expressed as:
+    \[
+    A(c \to c') = \min \left( 1, \frac{\prod_{i=1}^{K} p(V_i \mid C_i = c'_i)}{\prod_{i=1}^{K} p(V_i \mid C_i = c_i)} \right)
+    \]
+
+    Since \( c \) and \( c' \) differ only by the swap of two correspondence variables \( C_i \) and \( C_j \), for most objects, 
+    the terms in the numerator and denominator cancel out, except for \( V_i \) and \( V_j \). Therefore, the formula simplifies to:
+    \[
+    A(c \to c') = \min \left( 1, \frac{p(V_i \mid C_i = c'_i) \cdot p(V_j \mid C_j = c'_j)}{p(V_i \mid C_i = c_i) \cdot p(V_j \mid C_j = c_j)} \right)
+    \]
+
+    This simplification arises because \( c \) and \( c' \) differ only in the assignments of \( C_i \) and \( C_j \). The proposal distribution is symmetric, meaning \( T(c \to c') = T(c' \to c) \). Therefore, the acceptance probability further simplifies to:
+    \[
+    A(c \to c') = \min \left( 1, \frac{p(V_i \mid C_i = c'_i) \cdot p(V_j \mid C_j = c'_j)}{p(V_i \mid C_i = c_i) \cdot p(V_j \mid C_j = c_j)} \right)
+    \]
+
+    This formula gives us the acceptance probability for each MH step, ensuring the correctness and convergence of the algorithm.
+
+    
+    \newpage
     \item \tblu{Suppose we have run the MH sampler for a long time and collected \( M \) samples \( \{(C_1^{[m]}, \ldots, C_K^{[m]})\}_{m=T+1}^{T+M} \) 
     after the chain has mixed. Give an explicit expression for estimating the posterior \( p(C_i \mid v_1, \ldots, v_K) \).}
-    
+       
+    The posterior probability \( p(C_i = k \mid v_1, \ldots, v_K) \) for a specific correspondence variable \( C_i \) taking the value \( k \) can be estimated as the fraction of samples where \( C_i = k \). Mathematically, this is given by:
+    \[
+    p(C_i = k \mid v_1, \ldots, v_K) \approx \frac{1}{M} \sum_{m=T+1}^{T+M} \delta(C_i^{[m]}, k)
+    \]
+    where \( \delta(C_i^{[m]}, k) \) is the Kronecker delta function, defined as:
+    \[
+    \delta(C_i^{[m]}, k) =
+    \begin{cases}
+    1 & \text{if } C_i^{[m]} = k \\
+    0 & \text{if } C_i^{[m]} \neq k
+    \end{cases}
+    \]
+
+    Thus, the posterior distribution \( p(C_i \mid v_1, \ldots, v_K) \) can be estimated as:
+    \[
+    p(C_i \mid v_1, \ldots, v_K) \approx \left\{ \frac{1}{M} \sum_{m=T+1}^{T+M} \delta(C_i^{[m]}, k) \right\}_{k=1}^{K}
+    \]
+
+    This expression gives an explicit method for estimating the posterior distribution of the correspondence variables after collecting \( M \) 
+    samples from the MH sampler, leveraging the convergence property of MC (which converges to the true posterior as \( M \to \infty \)).
+
+
     \item \tblu{Your fellow student hears about your MH algorithm and suggests that you can also consider using Gibbs sampling to compute your marginals. Will this work? Explain.}
+    
+    consider \( K = 2 \).
+
+    The possible states are:
+    \[
+    c_1 = (1, 2), \quad c_2 = (2, 1)
+    \]
+    
+    In Gibbs sampling, each variable is updated in turn by sampling from its conditional distribution given the other variables. Suppose we start in state \( c_1 = (1, 2) \). When we update \( C_1 \), we sample from \( p(C_1 \mid C_2 = 2) \). Since \( C_2 = 2 \), \( C_1 \) must be 1, so no change occurs. Similarly, updating \( C_2 \) by sampling from \( p(C_2 \mid C_1 = 1) \) keeps \( C_2 \) at 2. Thus, the state remains \( c_1 = (1, 2) \).
+    
+    If we start in state \( c_2 = (2, 1) \), updating \( C_1 \) by sampling from \( p(C_1 \mid C_2 = 1) \) keeps \( C_1 \) at 2, and updating \( C_2 \) by sampling from \( p(C_2 \mid C_1 = 2) \) keeps \( C_2 \) at 1. Thus, the state remains \( c_2 = (2, 1) \).
+    
+    This shows that Gibbs sampling gets stuck in the initial state and cannot transition between \( (1, 2) \) and \( (2, 1) \). Therefore, the process is not irreducible.
+    
+    For larger \( K \), the situation remains similar. If \( K \) is even, Gibbs sampling can only reach even permutations (those that can be achieved by an even number of swaps), and if \( K \) is odd, it can only reach odd permutations. This restricts the state space significantly.
+    
+    In contrast, the Metropolis-Hastings algorithm with the swap proposal can move between any states, ensuring irreducibility and the ability to explore the entire state space.
+    
+    Thus, Gibbs sampling will not work for this data association problem, whereas the Metropolis-Hastings algorithm is appropriate.
+
 \end{enumerate}
 
 
