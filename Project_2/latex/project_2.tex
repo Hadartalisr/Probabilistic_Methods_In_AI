@@ -371,17 +371,95 @@ pdfproducer={PDFLaTeX},%
     
 
 
-
-    \newpage
     \item \tblu{Alternatively, we can think of a variant of Gibbs sampling where larger steps are taken. 
     Specifically, larger sets of variables are sampled simultaneously while the rest are fixed. 
     Show that sampling two variables given the third overcomes the problem of Gibbs sampling in the deterministic XOR network.}
     
+    \begin{itemize}
+        \item Instead of sampling one variable at a time, we sample two variables simultaneously given the value of the third variable. This breaks the deterministic dependency and allows transitions between states that would otherwise be impossible.
+
+        \item \textbf{Steps:}
+        \begin{enumerate}
+            \item Fix the value of \( Z \).
+            \item Sample \( (X, Y) \) given \( Z \).
+        \end{enumerate}
+
+        \item \textbf{Transition Probabilities:}
+        \begin{itemize}
+            \item Given \( Z \), the possible values of \( (X, Y) \) are:
+            \[
+            \begin{aligned}
+                &\text{If } Z = 0: \quad (X, Y) = (0, 0) \text{ or } (1, 1) \text{ with equal probability} \\
+                &\text{If } Z = 1: \quad (X, Y) = (0, 1) \text{ or } (1, 0) \text{ with equal probability}
+            \end{aligned}
+            \]
+
+            \item By sampling \( (X, Y) \) given \( Z \), we can transition between the states efficiently. The deterministic dependency of \( Z \) on \( X \) and \( Y \) is no longer a hindrance because we are not attempting to change one variable while holding the other constant.
+        \end{itemize}
+
+        \item \textbf{Justification:}
+        \begin{itemize}
+            \item The main issue with standard Gibbs sampling is that it gets stuck in configurations where a single-variable update cannot change the state due to the XOR constraint. By sampling pairs of variables, we allow transitions that respect the XOR constraint directly.
+            \item This method ensures that the Markov chain can explore the entire state space because any valid combination of \( (X, Y, Z) \) can be reached by fixing \( Z \) and sampling \( (X, Y) \).
+            \item The resulting Markov chain is irreducible and aperiodic, ensuring convergence to the correct stationary distribution.
+        \end{itemize}
+    \end{itemize}
 
 
 
+
+
+    \newpage
     \item \tblu{To use this last sampler, we need to calculate the probability of a pair of variables given the rest. 
     Write down a (simplified as possible) formula for \( p_{\Phi}(X_i, X_j \mid X \setminus \{X_i, X_j\}) \) for a general Gibbs distribution \( p_{\Phi} \).}
+
+
+ 
+\textbf{Derivation:}
+Consider a general Gibbs distribution \( p_\Phi \) defined over a set of random variables \( \mathcal{X} = \{X_1, X_2, \ldots, X_n\} \). The Gibbs distribution is given by:
+\[
+P_\mathcal{X}(x_1, x_2, \ldots, x_n) = \frac{1}{Z} \prod_{j} \phi_j(X_{c_j})
+\]
+where:
+\begin{itemize}
+    \item \( \mathcal{C} = \{c_1, c_2, \ldots, c_m\} \) is a set of cliques in the graph.
+    \item \( X_{c_j} \) is the set of random variables in clique \( c_j \).
+    \item \( \phi_j : \text{Val}(X_{c_j}) \to \mathbb{R}^+ \) is a potential function / factor over the clique \( c_j \).
+    \item \( Z \) is the normalization constant (partition function).
+\end{itemize}
+
+\begin{enumerate}
+    \item \textbf{Joint Distribution:}
+    The joint distribution \( P_\mathcal{X}(X_1, X_2, \ldots, X_n) \) can be written as:
+    \[
+    P_\mathcal{X}(X_1, X_2, \ldots, X_n) = \frac{1}{Z} \prod_{j} \phi_j(X_{c_j})
+    \]
+
+    \item \textbf{Conditional Distribution:}
+    The conditional distribution \( p_\Phi(X_i, X_j \mid \mathcal{X} \setminus \{X_i, X_j\}) \) is given by:
+    \[
+    p_\Phi(X_i, X_j \mid \mathcal{X} \setminus \{X_i, X_j\}) = \frac{P_\mathcal{X}(X_i, X_j, \mathcal{X} \setminus \{X_i, X_j\})}{P_\mathcal{X}(\mathcal{X} \setminus \{X_i, X_j\})}
+    \]
+    
+    \item \textbf{Simplification:}
+    Using the definition of the Gibbs distribution, we can write:
+    \begin{align*}
+        p_\Phi(X_i, X_j \mid \mathcal{X} \setminus \{X_i, X_j\}) &= \frac{\frac{1}{Z} \prod_{j} \phi_j(X_{c_j})}{\sum_{X_i, X_j} \frac{1}{Z} \prod_{j} \phi_j(X_{c_j})} \\
+        &= \frac{\prod_{j} \phi_j(X_{c_j})}{\sum_{X_i, X_j} \prod_{j} \phi_j(X_{c_j})} \\
+        &= \frac{\prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j}) \prod_{k: X_{c_k} \cap \{X_i, X_j\} = \emptyset} \phi_k(X_{c_k})}{\sum_{X_i, X_j} \prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j}) \prod_{k: X_{c_k} \cap \{X_i, X_j\} = \emptyset} \phi_k(X_{c_k})} \\
+        &= \frac{\prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j})}{\sum_{X_i, X_j} \prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j})}
+    \end{align*}
+
+\end{enumerate}
+
+\textbf{Conclusion:}
+The simplified formula for the conditional distribution of a pair of variables given the rest in a general Gibbs distribution \( p_\Phi \) is:
+\[
+p_\Phi(X_i, X_j \mid \mathcal{X} \setminus \{X_i, X_j\}) = \frac{\prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j})}{\sum_{X_i, X_j} \prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j})}
+\]
+
+
+
 \end{enumerate}
 
 
