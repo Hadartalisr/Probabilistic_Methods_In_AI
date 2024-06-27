@@ -192,8 +192,71 @@ pdfproducer={PDFLaTeX},%
 
 
 \begin{enumerate}
-    \item \tblu{What will happen if we try to use Gibbs sampling on \( B \) to estimate \( p(x_1 \mid z_1) \)?}
+    \item \tblu{What will happen if we try to use Gibbs sampling on \( B \) to estimate \( p(x^1 \mid z^1) \)?}
     
+    When using Gibbs sampling on the BN \( B \) to estimate \( p(x^1 \mid z^1) \), we update each variable in turn by sampling from its 
+    conditional distribution given the current values of the other variables.
+
+    The conditional distributions are as follows:
+    \[
+    \begin{aligned}
+        p(X \mid Y, Z) &= 
+        \begin{cases} 
+        1 & \text{if } Z = X \oplus Y \\
+        0 & \text{otherwise} 
+        \end{cases} \\
+        p(Y \mid X, Z) &= 
+        \begin{cases} 
+        1 & \text{if } Z = X \oplus Y \\
+        0 & \text{otherwise} 
+        \end{cases} \\
+        p(Z \mid X, Y) &= 
+        \begin{cases} 
+        1 & \text{if } Z = X \oplus Y \\
+        0 & \text{otherwise} 
+        \end{cases}
+    \end{aligned}
+    \]
+
+    Given \( Z = 1 \), we need to estimate \( p(X = 1 \mid Z = 1) \).
+
+    1. \textbf{Initialization} : Assume we start with an initial state where \( (X, Y, Z) = (0, 1, 1) \).
+
+    2. \textbf{Gibbs Sampling Iterations} : 
+    \begin{itemize}
+        \item Update \( X \) given \( Y \) and \( Z \):
+            \[
+            p(X = 1 \mid Y = 1, Z = 1) = 
+            \begin{cases} 
+            1 & \text{if } 1 = 1 \oplus 1 \\ 
+            0 & \text{otherwise} 
+            \end{cases} \Rightarrow X = 0
+            \]
+        \item Update \( Y \) given \( X \) and \( Z \):
+            \[
+            p(Y = 0 \mid X = 0, Z = 1) = 
+            \begin{cases} 
+            1 & \text{if } 1 = 0 \oplus 1 \\
+            0 & \text{otherwise}
+            \end{cases} \Rightarrow Y = 1
+            \]
+
+        \item Update \( Z \) given \( X \) and \( Y \):
+            \[
+            p(Z = 1 \mid X = 0, Y = 1) = 
+            \begin{cases} 
+            1 & \text{if } 1 = 0 \oplus 1 \\
+            0 & \text{otherwise}
+            \end{cases} \Rightarrow Z = 1
+            \]
+    \end{itemize}
+
+
+    3. \textbf{Cycle Repetition} : The process will keep the variables in the same state: \( (X, Y, Z) = (0, 1, 1) \).
+
+    This shows that Gibbs sampling gets stuck in a state where the variables do not change, because the deterministic nature of the XOR function does not allow for transitions between different states. Therefore, Gibbs sampling fails to explore the state space effectively in this scenario and cannot estimate \( p(x^1 \mid z^1) \) properly.
+
+    \newpage
     \item \tblu{Now suppose we make \( Z \) a noisy XOR of its parents. Specifically,
     \[
     p(z_1 \mid X, Y) =
@@ -207,10 +270,116 @@ pdfproducer={PDFLaTeX},%
     What is the expected number of iterations until a state transition (i.e., from one state of the chain - some instantiation \( x, y, z \) - to a different state) 
     as a function of \( \epsilon \)? What can you conclude about problems that Gibbs sampling might encounter in this scenario?}
     
+
+    To find the expected number of iterations until a state transition, we need to compute the transition probabilities and analyze the resulting Markov chain.
+
+    \begin{enumerate}
+        \item \textbf{Transition Probabilities:}
+        \begin{itemize}
+            \item If \( Z = X \oplus Y \):
+            \[
+            p(\text{transition}) = p(Z \ne X \oplus Y) 
+            \]
+            Given \( X \) and \( Y \) are uniformly distributed,
+            \[
+            p(Z \ne X \oplus Y) = \sum_{x,y} p(x, y) p(Z \ne X \oplus Y \mid x, y)
+            \]
+            \[
+            = \frac{1}{4} \left( p(Z = 1 \mid (0, 0)) + p(Z = 0 \mid (0, 1)) + p(Z = 0 \mid (1, 0)) + p(Z = 1 \mid (1, 1)) \right) = \frac{1}{4} (4\epsilon) = \epsilon
+            \]
+    
+            \item If \( Z \ne X \oplus Y \):
+            \[
+            p(\text{transition}) = p(Z = X \oplus Y) = 1 - \epsilon
+            \]
+        \end{itemize}
+    
+        \item \textbf{Markov Chain Analysis:}
+        \begin{itemize}
+            \item Define states \( A \) and \( B \):
+            \[
+            A: Z = X \oplus Y, \quad B: Z \ne X \oplus Y
+            \]
+            \[
+            p(A \to B) = \epsilon, \quad p(B \to A) = 1 - \epsilon
+            \]
+    
+            \item Stationary Distribution:
+            \[
+            \pi(A) + \pi(B) = 1
+            \]
+            Using the balance equations:
+            \[
+            \pi(A) = (1 - \epsilon) \pi(A) + \epsilon \pi(B)
+            \]
+            Since \(\pi(A) + \pi(B) = 1\):
+            \[
+            \pi(A) = (1 - \epsilon) \pi(A) + \epsilon (1 - \pi(A))
+            \]
+            \[
+            \pi(A) = (1 - \epsilon) \pi(A) + \epsilon - \epsilon \pi(A)
+            \]
+            \[
+            \pi(A) = \pi(A) (1 - \epsilon - \epsilon) + \epsilon
+            \]
+            \[
+            \pi(A) (1 - \epsilon + \epsilon) = \epsilon
+            \]
+            \[
+            \pi(A) = 1 - \epsilon
+            \]
+            Therefore:
+            \[
+            \pi(B) = \epsilon
+            \]
+    
+            \item Expected Number of Iterations:
+            The expected number of iterations \( \mathbb{E}(\text{iterations}) \) until a state transition can be computed using the law of total expectation. Let \( T \) be the random variable representing the number of iterations until a state transition.
+            
+            Using the stationary distribution, we can write:
+            \[
+            \mathbb{E}[T] = \pi(A) \cdot \mathbb{E}[T \mid S = A] + \pi(B) \cdot \mathbb{E}[T \mid S = B]
+            \]
+            
+            Since the time to transition from state \( A \) to \( B \) is geometrically distributed with parameter \( \epsilon \), the expected number of steps is \( \frac{1}{\epsilon} \). Similarly, the time to transition from state \( B \) to \( A \) is geometrically distributed with parameter \( 1 - \epsilon \), so the expected number of steps is \( \frac{1}{1 - \epsilon} \):
+            \[
+            \mathbb{E}[T \mid S = A] = \frac{1}{\epsilon}, \quad \mathbb{E}[T \mid S = B] = \frac{1}{1 - \epsilon}
+            \]
+            
+            Therefore:
+            \[
+            \mathbb{E}[T] = (1 - \epsilon) \cdot \frac{1}{\epsilon} + \epsilon \cdot \frac{1}{1 - \epsilon} = 
+            \]
+            \[
+            = \frac{1 - \epsilon}{\epsilon} + \frac{\epsilon}{1 - \epsilon}
+            \]
+            \[
+            = \frac{(1 - \epsilon)^2 + \epsilon^2}{\epsilon (1 - \epsilon)} = \frac{1 - 2\epsilon + \epsilon^2 + \epsilon^2}{\epsilon (1 - \epsilon)} = \frac{1 - 2\epsilon + 2\epsilon^2}{\epsilon - \epsilon^2}
+            \]
+        \end{itemize}
+
+        \item \textbf{Conclusion:}
+        Gibbs sampling might encounter issues if \( \epsilon \) is very small or very close to 1.
+        In these cases, \( Z \) will rarely change its value, leading to very slow mixing of the Markov chain and making Gibbs sampling inefficient
+        (the limit of the expected number of iterations as \( \epsilon \) approaches 0 or 1 is infinity).
+        \begin{itemize}
+            \item When \( \epsilon \) is close to 0.5, the chain will mix more rapidly.
+            \item Therefore, the efficiency of Gibbs sampling in this scenario is highly dependent on the value of \( \epsilon \). For very small or very large \( \epsilon \), the chain will take a long time to transition between states, resulting in poor performance of Gibbs sampling.
+        \end{itemize}
+
+    \end{enumerate}
+    
+
+
+
+    \newpage
     \item \tblu{Alternatively, we can think of a variant of Gibbs sampling where larger steps are taken. 
     Specifically, larger sets of variables are sampled simultaneously while the rest are fixed. 
     Show that sampling two variables given the third overcomes the problem of Gibbs sampling in the deterministic XOR network.}
     
+
+
+
     \item \tblu{To use this last sampler, we need to calculate the probability of a pair of variables given the rest. 
     Write down a (simplified as possible) formula for \( p_{\Phi}(X_i, X_j \mid X \setminus \{X_i, X_j\}) \) for a general Gibbs distribution \( p_{\Phi} \).}
 \end{enumerate}
