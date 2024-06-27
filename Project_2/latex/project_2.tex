@@ -12,6 +12,8 @@
 \usepackage{rotating}
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing} 
+\usetikzlibrary{bayesnet} 
+
 \usepackage{float}
 \usepackage{minted}
 
@@ -458,12 +460,7 @@ The simplified formula for the conditional distribution of a pair of variables g
 p_\Phi(X_i, X_j \mid \mathcal{X} \setminus \{X_i, X_j\}) = \frac{\prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j})}{\sum_{X_i, X_j} \prod_{j: X_{c_j} \cap \{X_i, X_j\} \ne \emptyset} \phi_j(X_{c_j})}
 \]
 
-
-
 \end{enumerate}
-
-
-
 
 
 
@@ -477,15 +474,154 @@ p_\Phi(X_i, X_j \mid \mathcal{X} \setminus \{X_i, X_j\}) = \frac{\prod_{j: X_{c_
     E_{p(X \mid e)}[f(X)] = \sum_{x_p} p(x_p \mid e) E_{p(X_d \mid x_p, e)}[f(x_p, X_d, e)]
     \]
     Use this to explain how to estimate \( E_{p(X \mid e)}[f(X)] \) using the collapsed particles.}
+
+
+    \textbf{Derivation:}
+    \begin{align*}
+    \mathbb{E}_{p(\mathcal{X} \mid e)} [f(\mathcal{X})] &= \sum_{\mathcal{X}} f(\mathcal{X}) p(\mathcal{X} \mid e) \\
+    &\stackrel{\mathcal{X} = \mathcal{X}_d \sqcup \mathcal{X}_p }{=} \sum_{x_p \in \mathcal{X}_p} \sum_{x_d \in \mathcal{X}_d} f(x_p, x_d) p(x_p, x_d \mid e) \\
+    &= \sum_{x_p \in \mathcal{X}_p} \left( \sum_{x_d \in \mathcal{X}_d} f(x_p, x_d) p(x_d \mid x_p, e) \right) p(x_p \mid e) \\
+    &= \sum_{x_p \in \mathcal{X}_p} \mathbb{E}_{p(\mathcal{X}_d \mid x_p, e)} [f(x_p, \mathcal{X}_d)] p(x_p \mid e) \\
+    &= \sum_{x_p \in \mathcal{X}_p} p(x_p \mid e) \mathbb{E}_{p(\mathcal{X}_d \mid x_p, e)} [f(x_p, \mathcal{X}_d)]
+    \end{align*}
+
+    
+    \textbf{How to estimate \( \mathbb{E}_{p(\mathcal{X} \mid e)} [f(\mathcal{X})] \) using the collapsed particles:}
+    \begin{itemize}
+        \item Sample \( x_p \) from \( p(\mathcal{X}_p \mid e) \).
+        \item For each sampled \( x_p \), compute the conditional expectation \( \mathbb{E}_{p(\mathcal{X}_d \mid x_p, e)} [f(x_p, \mathcal{X}_d)] \) (by IS).
+        \item Average these conditional expectations weighted by \( p(x_p \mid e) \) (IS).
+    \end{itemize}
+    
+    By using the collapsed particles, we effectively reduce the dimensionality of the problem, making the estimation more efficient while leveraging the known structure of the distribution \( p(\mathcal{X}_d \mid x_p, e) \).
+
+    
+
+
     
     \item \tblu{Describe what this approach is equivalent to in the two extreme cases: When \( X_p = \emptyset \) and when \( X_p = X \).}
     
+    \begin{itemize}
+        \item \textbf{When \( \mathcal{X}_p = \emptyset \):}
+        In this extreme case, there are no variables in the set \( \mathcal{X}_p \), which means we are not collapsing any variables. Consequently, all variables are in the set \( \mathcal{X}_d \). Therefore, the approach simplifies to directly estimating the expectation using importance sampling over the entire state space \( \mathcal{X} \):
+    
+        \begin{align*}
+        \mathbb{E}_{p(\mathcal{X} \mid e)} [f(\mathcal{X})] &= \sum_{x_p \in \emptyset} p(x_p \mid e) \mathbb{E}_{p(\mathcal{X}_d \mid x_p, e)} [f(x_p, \mathcal{X}_d)] \\
+        &= \mathbb{E}_{p(\mathcal{X}_d \mid e)} [f(\mathcal{X}_d)]
+        \end{align*}
+    
+        In this scenario, we are simply performing standard importance sampling over the full state space \( \mathcal{X} \).
+    
+        \item \textbf{When \( \mathcal{X}_p = \mathcal{X} \):}
+        In this extreme case, all variables are in the set \( \mathcal{X}_p \), which means \( \mathcal{X}_d = \emptyset \). Consequently, there are no variables left to be integrated out conditionally. The approach simplifies to:
+    
+        \begin{align*}
+        \mathbb{E}_{p(\mathcal{X} \mid e)} [f(\mathcal{X})] &= \sum_{x_p \in \mathcal{X}} p(x_p \mid e) \mathbb{E}_{p(\emptyset \mid x_p, e)} [f(x_p, \emptyset)] \\
+        &= \sum_{x_p \in \mathcal{X}} f(x_p) p(x_p \mid e) \\
+        &= \mathbb{E}_{p(\mathcal{X} \mid e)} [f(\mathcal{X})]
+        \end{align*}
+    
+        In this case, we are directly sampling from the full joint distribution without collapsing any variables, which is equivalent to direct sampling from \( p(\mathcal{X} \mid e) \).
+    \end{itemize}
+    
+    In summary When \( \mathcal{X}_p \in \{\emptyset, \mathcal{X} \} \), the approach reduces to standard importance sampling over the entire state space \( \mathcal{X} \).
+
+    
+
+
     \item \tblu{Describe what will be a good "rule-of-thumb" in choosing \( X_p \) and \( X_d \) for this method.}
     
+    When choosing the sets \( \mathcal{X}_p \) and \( \mathcal{X}_d \) for collapsed particle sampling, it is essential to strike a balance that maximizes computational efficiency and sampling accuracy. Here are some rules of thumb:
+
+    \begin{itemize}
+
+        \item \textbf{Dependency Structure:} 
+        If variables in \( \mathcal{X}_p \) are highly dependent on each other, sampling them together can reduce the variance of the estimator.
+        Conversely, if variables in \( \mathcal{X}_d \) are conditionally independent given \( \mathcal{X}_p \), this simplifies the computation of \( \mathbb{E}_{p(\mathcal{X}_d \mid x_p, e)} [f(x_p, \mathcal{X}_d)] \).
+    
+        \item \textbf{Computational Efficiency:}
+        Ensure that the sets \( \mathcal{X}_p \) and \( \mathcal{X}_d \) are of manageable size, as sampling and computing conditional expectations can be computationally expensive for large sets.
+    
+        \item \textbf{Practical Considerations:}
+        - Choose \( \mathcal{X}_p \) such that the marginal distribution \( p(\mathcal{X}_p \mid e) \) is easy to estimate or sample from.
+        - Choose \( \mathcal{X}_d \) so that efficient algorithms or approximations are available for computing \( \mathbb{E}_{p(\mathcal{X}_d \mid x_p, e)} [f(x_p, \mathcal{X}_d)] \).
+    
+    \end{itemize}
+
+
+
     \item \tblu{Give an example of a Bayesian Network over \( X \), a set of observed variables \( E \) and a query \( p(X \mid e) \) 
     that is hard to calculate directly, but can be estimated using the described method of collapsed particles using 
     efficient calculations only. \( X_d \) and \( X_p \) should be \( \neq \emptyset \) in your example.}
     
+
+
+
+Consider a Bayesian Network with the following structure:
+
+\begin{center}
+\begin{tikzpicture}
+    % Nodes
+    \node[latent] (A) {$A$};
+    \node[latent, below left=of A] (B) {$B$};
+    \node[latent, below right=of A] (C) {$C$};
+    \node[latent, below=of B] (D) {$D$};
+    \node[latent, right=of C] (F) {$F$};
+
+    % Edges
+    \edge {A} {B, C};
+    \edge {B, C} {D};
+    \edge {C} {F};
+\end{tikzpicture}
+\end{center}
+
+Here:
+\begin{itemize}
+    \item \( A \) is the parent of \( B \) and \( C \).
+    \item \( B \) and \( C \) are the parents of \( D \).
+    \item \( C \) is the parent of \( F \).
+\end{itemize}
+
+Let the set of observed variables be \( E = \{D\} \), and the query is \( p(A, B, C, F \mid D) \).
+
+Calculating \( p(A, B, C, F \mid D) \) directly is difficult due to the dependencies among the variables. However, we can use the collapsed particle method to make the computation more efficient.
+
+\textbf{Choosing \( \mathcal{X}_p \) and \( \mathcal{X}_d \):} \\
+- Let \( \mathcal{X}_p = \{A, C\} \) \\ 
+- Let \( \mathcal{X}_d = \{B, F\} \) \\
+
+
+\textbf{Calculation:} \\
+    Sample \( (A, C) \) from the joint distribution \( p(A, C \mid D) \). This can be done by factorizing the joint distribution:
+    \[
+    p(A, C \mid D) = \frac{p(D \mid A, C) p(A) p(C \mid A)}{p(D)}
+    \]
+    where
+    \[
+    p(D) = \sum_{A, C} p(D \mid A, C) p(A) p(C)
+    \]
+
+    Given the structure of the network, \( D \) depends on \( B \) and \( C \), and \( B \) depends on \( A \). Thus, the conditional distribution \( p(D \mid A, C) \) can be computed using:
+    \[
+    p(D \mid A, C) = \sum_{B} p(D \mid B, C) p(B \mid A)
+    \]
+
+    Assuming we have observed \( D = d \), we can simplify the sampling from \( p(A, C \mid D) \) using the above factorization.
+
+    Given the sampled values \( (A, C) \), we compute the conditional distribution \( p(B, F \mid A, C, D) \):
+    \[
+    p(B, F \mid A, C, D) = p(B \mid A) p(F \mid C)
+    \]
+    This simplifies the computation because \( B \) depends only on \( A \), and \( F \) depends only on \( C \) (given the observations there are no active trails between \( B \) and \( F \)).
+
+\textbf{Efficient Calculation:}
+By collapsing the variables \( A \) and \( C \) (sampling them directly), we reduce the complexity of the problem. This allows us to handle the dependencies more efficiently and compute the conditional expectations using the simpler structure of the network.
+
+  
+
+
+
+
     \item \tblu{In many cases, sampling from \( p(X_p \mid e) \) is still hard. 
     We therefore want to build a (Normalized) Importance Sampling version of this method. 
     We do this by sampling \( x_p \) from a proposal distribution \( q(X_p) \) and using the weights
