@@ -46,30 +46,131 @@ pdfproducer={PDFLaTeX},%
 
 \begin{enumerate}
     \item[(a)] \tblu{What is the graph of the mutilated network \( B_{e_r} \)? Which CPDs have changed?}
+
+    The graph of the mutilated network \( \mathcal{B}_{e_r} \) is obtained by removing the edges directed towards the observed variables \( M \) and \( F \). In this case, \( M \) and \( F \) are root nodes, so the structure of the graph remains the same, but the CPDs for \( M \) and \( F \) are replaced by delta functions at the observed values \( m^0 \) and \( f^1 \), respectively.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{./plots/11a.jpeg}
+    \end{figure}
     
     \item[(b)] \tblu{Show that the proposal distribution is equal to the posterior \( p_B(X \mid e_r) \) in this case.}
     
+
+    The proposal distribution \( q \) is equal to \( p_{\mathcal{B}_{e_r}}(X) \). Given that \( e_r = \{M = m^0, F = f^1\} \), the mutilated network \( \mathcal{B}_{e_r} \) sets \( M = m^0 \) and \( F = f^1 \) and leaves the rest of the network unchanged. Therefore, the posterior distribution \( p_{\mathcal{B}}(X \mid e_r) \) can be shown as follows:
+
+    \begin{align*}
+        p_{\mathcal{B}}(X \mid e_r) &= \frac{p_{\mathcal{B}}(X, e_r)}{p_{\mathcal{B}}(e_r)} \\
+        &= \frac{p_{\mathcal{B}}(X, M = m^0, F = f^1)}{p_{\mathcal{B}}(M = m^0, F = f^1)} \\
+        &= \frac{p_{\mathcal{B}}(M = m^0) \cdot p_{\mathcal{B}}(F = f^1) \cdot p_{\mathcal{B}}(X \mid M = m^0, F = f^1)}{p_{\mathcal{B}}(M = m^0) \cdot p_{\mathcal{B}}(F = f^1)} \\
+        &= p_{\mathcal{B}}(X \mid M = m^0, F = f^1) \\
+        &= P_{\mathcal{B}_{e_r}}(M = m^0) \cdot P_{\mathcal{B}_{e_r}}(F = f^1) \cdot P_{\mathcal{B}_{e_r}}(X) \\
+        &= p_{\mathcal{B}_{e_r}}(X, e_r) 
+        \end{align*}
+    
+
+    
     \item[(c)] \tblu{What are the IS weights?}
     
+
+    The IS weights are given by \( w(X) = \frac{p_{\mathcal{B}}(X, e_r)}{q(X)} \). Since \( q(X) = p_{\mathcal{B}_{e_r}}(X) = p_{\mathcal{B}}(X \mid e_r) \),
+
+    \begin{align*}
+    w(X) &= \frac{p_{\mathcal{B}}(X, e_r)}{p_{\mathcal{B}_{e_r}}(X)} \\
+    &= \frac{p_{\mathcal{B}}(X, M = m^0, F = f^1)}{p_{\mathcal{B}}(X \mid M = m^0, F = f^1)} \\
+    &= \frac{p_{\mathcal{B}}(M = m^0) \cdot p_{\mathcal{B}}(F = f^1) \cdot p_{\mathcal{B}}(X \mid M = m^0, F = f^1)}{p_{\mathcal{B}}(X \mid M = m^0, F = f^1)} \\
+    &= p_{\mathcal{B}}(M = m^0) \cdot p_{\mathcal{B}}(F = f^1) = p_{\mathcal{B}}(e_r) 
+    \end{align*}
+
+    Thus, the IS weights are equal to the posterior probability of the evidence \( e_r = \{M = m^0, F = f^1\} \) and independent of the sample \( X \).
+    
+
+    
     \item[(d)] \tblu{Is \( q = p_{B_e} \) a good choice for the proposal distribution in this case?}
+    
+    
+    Yes, \( q = p_{\mathcal{B}_e} \) is a good choice for the proposal distribution. 
+    This is because it effectively assigns the evidence to the root nodes and then samples from the distribution
+     \( p_{\mathcal{B}}(X \mid M = m^0, F = f^1) \), which is the same as sampling from the posterior distribution given the evidence. 
+     This ensures that the IS weights are uniform, making the sampling process efficient and unbiased.
+    
+
 \end{enumerate}
+
+
+
+
 
 \subsubsection*{\tblu{1.2 Assuming we see evidence \( e_l = \{n = n_1, L = l_1\} \)}}
 
 \begin{enumerate}
     \item[(a)] \tblu{What is the graph of the mutilated network \( B_{e_l} \)? Which CPDs have changed?}
+
+    The graph of the mutilated network \( \mathcal{B}_{e_l} \) is obtained by removing the edges directed towards the observed 
+    variables \( N \) and \( L \). The structure of the graph remains the same, but the CPDs for \( N \) and \( L \) 
+    are replaced by delta functions at the observed values \( n_1 \) and \( l_1 \), respectively.
+
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{./plots/12a.jpeg}
+    \end{figure}
+    
     
     \item[(b)] \tblu{Show that the proposal distribution is equal to the prior \( p_B(X) \) in this case.}
     
+    The proposal distribution \( q \) is equal to \( p_{\mathcal{B}_{e_l}}(X) \). Given that \( e_l = \{N = n_1, L = l_1\} \), 
+    the mutilated network \( \mathcal{B}_{e_l} \) sets \( N = n_1 \) and \( L = l_1 \) and leaves the rest of the network unchanged. 
+    Therefore, the proposal distribution is simply the prior distribution of the remaining variables:
+
+    \begin{align*}
+    p_{\mathcal{B}}(X) &= p_{\mathcal{B}}(M) \cdot p_{\mathcal{B}}(F) \cdot p_{\mathcal{B}}(S \mid M, F) \\
+    &= P_{\mathcal{B}_{e_l}}(M) \cdot P_{\mathcal{B}_{e_l}}(F) \cdot P_{\mathcal{B}_{e_l}}(S \mid M, F) = p_{\mathcal{B}_{e_l}}(X) = q(X)
+    \end{align*}
+
+    Thus, the proposal distribution \( q(X) \) is equal to the prior distribution \( p_{\mathcal{B}}(X) \).
+
+    
     \item[(c)] \tblu{What are the IS weights?}
     
+    The IS weights are given by \( w(X) = \frac{p_{\mathcal{B}}(X, e_l)}{q(X)} \). Since \( q(X) = p_{\mathcal{B}}(X) \),
+
+    \begin{align*}
+    w(X) &= \frac{p_{\mathcal{B}}(X, e_l)}{p_{\mathcal{B}}(X)} \\
+    &= \frac{p_{\mathcal{B}}(X) \cdot p_{\mathcal{B}}(e_l \mid X)}{p_{\mathcal{B}}(X)} \\
+    &= p_{\mathcal{B}}(e_l \mid X)
+    \end{align*}
+
+    Thus, the IS weights are equal to the likelihood of the evidence \( e_l = \{N = n_1, L = l_1\} \) given the sample \( X \).
+    
     \item[(d)] \tblu{Is \( q = p_{B_e} \) a good choice for the proposal distribution in this case?}
+    
+    No, \( q = p_{\mathcal{B}_e} \) is not a good choice for the proposal distribution in this case. 
+    The reason is that the proposal distribution \( q \) is equal to the prior distribution \( p_{\mathcal{B}}(X) \), 
+    which does not take the evidence into account. As a result, the IS weights \( w(X) = p_{\mathcal{B}}(e_l \mid X) \) 
+    can vary significantly, leading to high variance in the estimator. 
+    A better choice would be a proposal distribution that incorporates the evidence more effectively, reducing the variance of the IS weights.
+    
+
 \end{enumerate}
 
 \subsubsection*{\tblu{1.3 Conclusion}}
 
 \tblu{Use these two extreme cases to conclude, for a general BN, when \( q = p_{B_e} \) will be a good proposal distribution.}
 
+The two extreme cases of the mutilated network provide insights into when the proposal distribution \( q = p_{\mathcal{B}_e} \) is a good choice for Importance Sampling.
+
+1. \textbf{Evidence at Root Nodes}:
+
+   When the evidence \( e_r \) consists of root nodes (as in the case \( e_r = \{M = m^0, F = f^1\} \)), the mutilated network \( \mathcal{B}_{e_r} \) simplifies to setting the observed variables to their evidence values and sampling from the conditional distribution of the remaining variables given the evidence. In this case, the proposal distribution \( q \) matches the posterior distribution exactly, and the Importance Sampling (IS) weights are uniformly 1. This results in an efficient and unbiased estimator, making \( q = p_{\mathcal{B}_e} \) an ideal choice for the proposal distribution.
+
+2. \textbf{Evidence at Leaf Nodes}:
+
+   When the evidence \( e_l \) consists of leaf nodes (as in the case \( e_l = \{N = n_1, L = l_1\} \)), the mutilated network \( \mathcal{B}_{e_l} \) results in a proposal distribution that is equal to the prior distribution of the remaining variables. In this scenario, the IS weights are given by the likelihood of the evidence given the sample, which can lead to high variance in the estimator. This indicates that \( q = p_{\mathcal{B}_e} \) is not a good choice for the proposal distribution when the evidence is at the leaf nodes, as it does not adequately account for the evidence.
+
+\textbf{Conclusion}
+
+For a general Bayesian Network, \( q = p_{\mathcal{B}_e} \) is a good proposal distribution when the evidence is at or near the root nodes. In such cases, the proposal distribution matches the posterior distribution, resulting in low-variance IS weights and efficient sampling. However, when the evidence is at the leaf nodes, the proposal distribution does not incorporate the evidence effectively, leading to high-variance IS weights. Therefore, in cases where the evidence is at the leaf nodes, an alternative proposal distribution that better incorporates the evidence should be considered to achieve more efficient and accurate Importance Sampling.
 
 
 
