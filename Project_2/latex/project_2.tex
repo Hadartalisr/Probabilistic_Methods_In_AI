@@ -630,6 +630,52 @@ By collapsing the variables \( A \) and \( C \) (sampling them directly), we red
     \]
     where \( E_p = E \cap X_p \) and \( E_d = E \cap X_d \). Prove the correctness of this method. Specifically, show that \( E_q[w(x_p)] = p(e) \), 
     and conclude that this procedure gives an estimation of \( E_{p(X \mid e)}[f(X)] \).}
+
+
+ 
+First, let's show that \( \mathbb{E}_q[w(x_p)] = p(e) \).
+
+\begin{align*}
+\mathbb{E}_q[w(x_p)] &= \sum_{x_p \in \mathcal{X}_p} q(x_p) \cdot w(x_p) \\
+&= \sum_{x_p \in \mathcal{X}_p} q(x_p) \cdot \frac{p(x_p, e)}{q(x_p)} \\
+&= \sum_{x_p \in \mathcal{X}_p} p(x_p, e) \\
+&= p(e)
+\end{align*}
+
+Next, we show that this procedure gives an estimation of \( \mathbb{E}_{p(X|e)}[f(X)] \).
+
+We want to estimate \( \mathbb{E}_{p(X|e)}[f(X)] \), which can be written as:
+
+\begin{align*}
+\mathbb{E}_{p(X|e)}[f(X)] &= \sum_{x_p \in \mathcal{X}_p} \sum_{x_d \in \mathcal{X}_d} p(x_p, x_d | e) f(x_p, x_d) \\
+&= \sum_{x_p \in \mathcal{X}_p} \sum_{x_d \in \mathcal{X}_d} \frac{p(x_p, x_d, e)}{p(e)} f(x_p, x_d) \\
+&= \frac{1}{p(e)} \sum_{x_p \in \mathcal{X}_p} \sum_{x_d \in \mathcal{X}_d} p(x_p, e) \cdot p(x_d | x_p, e) f(x_p, x_d)
+\end{align*}
+
+Using the importance sampling weight \( w(x_p) = \frac{p(x_p, e)}{q(x_p)} \), we can reweight the expectation as follows:
+
+\begin{align*}
+\mathbb{E}_{p(X|e)}[f(X)] &= \frac{1}{p(e)} \sum_{x_p \in \mathcal{X}_p} q(x_p) \cdot w(x_p) \sum_{x_d \in \mathcal{X}_d} p(x_d | x_p, e) f(x_p, x_d)
+\end{align*}
+
+Taking the expectation under \( q(x_p) \), we have:
+
+\begin{align*}
+\mathbb{E}_q \left[ w(x_p) \sum_{x_d \in \mathcal{X}_d} p(x_d | x_p, e) f(x_p, x_d) \right] &= \frac{1}{p(e)} \sum_{x_p \in \mathcal{X}_p} q(x_p) \cdot w(x_p) \sum_{x_d \in \mathcal{X}_d} p(x_d | x_p, e) f(x_p, x_d) \\
+&= \frac{1}{p(e)} \sum_{x_p \in \mathcal{X}_p} p(x_p, e) \sum_{x_d \in \mathcal{X}_d} p(x_d | x_p, e) f(x_p, x_d) \\
+&= \frac{1}{p(e)} \sum_{x_p \in \mathcal{X}_p} \sum_{x_d \in \mathcal{X}_d} p(x_p, x_d, e) f(x_p, x_d) \\
+&= \frac{1}{p(e)} p(e) \mathbb{E}_{p(X|e)}[f(X)] \\
+&= \mathbb{E}_{p(X|e)}[f(X)]
+\end{align*}
+
+Thus, the procedure gives an estimation of \( \mathbb{E}_{p(X|e)}[f(X)] \).
+
+This completes the proof.
+
+
+
+
+
 \end{enumerate}
 
 
